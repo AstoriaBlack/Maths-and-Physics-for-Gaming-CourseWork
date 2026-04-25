@@ -50,6 +50,7 @@ public class RedBallBehaviour : MonoBehaviour
         // ?Euler integration: position changes by velocity each frame
         // velocity * Time.deltaTime gives us the small position change this frame
         transform.position += velocity * Time.deltaTime; //Move the ball according to its velocity
+        //TODO Time.deltaTime is the time in seconds since the last frame, so this makes the movement frame-rate independent
 
     }
 
@@ -58,22 +59,33 @@ public class RedBallBehaviour : MonoBehaviour
         // Snap the ball exactly to the ground so it doesn't sink below
         transform.position = new Vector3(transform.position.x, 0f, transform.position.z);
 
-        //Calcultae what the vertical speed would be after applying restitution
-        float speedBeforeBounce = Mathf.Abs(velocity.y);
-        float speedAfterBounce = speedBeforeBounce * e; //Apply restitution to vertical speed
+        // //Calcultae what the vertical speed would be after applying restitution
+        // float speedBeforeBounce = Mathf.Abs(velocity.y);
+        // float speedAfterBounce = speedBeforeBounce * e; //Apply restitution to vertical speed
         
-        // Check if the bounce is too small to matter
-        // We compare it to the original launch vertical speed
-        if (speedAfterBounce / Mathf.Abs(launchVel.y) < stopThreshold)
-        {
-            isMoving = false;
-            velocity = Vector3.zero; //Stop the ball completely
-            Debug.Log("Ball has come to rest.");
-            return;
-        }
+        // // Check if the bounce is too small to matter
+        // // We compare it to the original launch vertical speed
+        // if (speedAfterBounce / Mathf.Abs(launchVel.y) < stopThreshold)
+        // {
+        //     isMoving = false;
+        //     velocity = Vector3.zero; //Stop the ball completely
+        //     Debug.Log("Ball has come to rest.");
+        //     return;
+        // }
 
-        // Reverse the vertical velocity and reduce it by e (the bounce)
-        // Horizontal velocity (x and z) stays the same — no friction
-        velocity.y = speedAfterBounce;
+        // // Reverse the vertical velocity and reduce it by e (the bounce)
+        // // Horizontal velocity (x and z) stays the same — no friction
+        // velocity.y = speedAfterBounce;
+
+        // Apply restitution directly
+            velocity.y = -velocity.y * e;
+
+            // Stop when very small bounce
+            if (Mathf.Abs(velocity.y) < stopThreshold)
+            {
+                velocity = Vector3.zero;
+                isMoving = false;
+            }
+            //only to understand, older code is above its better
     }
 }
