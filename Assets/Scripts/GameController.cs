@@ -110,7 +110,6 @@ public class GameController : MonoBehaviour
         //Mathf.Max stops fuel from going below 0
         fuel = Mathf.Max(fuel, 0f);
 
-        Debug.Log("Fuel drained: " + amount + " Remaining fuel: " + fuel);
     }
 
     //This method is called by TetherController when boulder is picked up to set the current fuel drain rate
