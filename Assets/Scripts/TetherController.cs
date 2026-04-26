@@ -1,96 +1,147 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
 
 public class TetherController : MonoBehaviour
 {
-    //Varriables setting up for inspector to change
+    // --- Inspector Settings ---
     [SerializeField] Transform tetherAnchor;
-    [SerializeField] float pickupRadius = 2f;
+    [SerializeField] float pickupRadius = 4f;
+    [SerializeField] TMP_Text promptText;
 
-    //Pivate variables
+    // --- Private State ---
     GameObject attachedBoulder;
     FixedJoint fixedJoint;
+    LineRenderer lineRenderer;
+    GameObject nearestBoulder;
     GameController gameController;
 
     // Start is called before the first frame update
     void Start()
     {
         gameController = FindObjectOfType<GameController>();
+        lineRenderer = GetComponent<LineRenderer>();
+        lineRenderer.enabled = false;
     }
 
     // Update is called once per frame
     void Update()
     {
-        //Only try to pick up if we don't already have a boulder attached
+        promptText.text = "";
+
+        nearestBoulder = FindNearestBoulder();
+
+        // Case 1: no boulder — look for one to pick up
         if (attachedBoulder == null)
         {
-            TryPickupBoulder();
-        }
-    }
-
-    void TryPickupBoulder()
-    {
-        //check rach boulder tag seperately
-        CheckAndPickup("BoulderLight");
-        CheckAndPickup("BoulderMedium");
-        CheckAndPickup("BoulderHeavy");
-    }
-
-    void CheckAndPickup(string bouldTag)
-    {
-        //this will make sure tether won't attach another if already one attached
-        if (attachedBoulder != null) return;
-
-        //Getting all boulders with specific tag
-        GameObject[] boulders = GameObject.FindGameObjectsWithTag(bouldTag);
-
-        foreach (GameObject boulder in boulders)
-        {
-            //Get direction vector from anchor to boulder 
-            Vector3 direction = boulder.transform.position - tetherAnchor.position;
-
-            //Get distance using magnitude
-            float distance = direction.magnitude;
-
-            //if close enough, attach the boulder
-            if (distance < pickupRadius)
+            if (nearestBoulder != null)
             {
-                AttachBoulder(boulder);
+                promptText.text = "Press E to pick up " + nearestBoulder.tag;
+
+                if (Input.GetKeyDown(KeyCode.E))
+                {
+                    AttachBoulder(nearestBoulder);
+                    return;
+                }
+            }
+        }
+        // Case 2: carrying a boulder — offer to drop
+        else
+        {
+            promptText.text = "Press E to drop boulder";
+
+            if (Input.GetKeyDown(KeyCode.E))
+            {
+                DetachBoulder();
                 return;
             }
         }
+
+        UpdateRopeVisual();
+    }
+
+    GameObject FindNearestBoulder()
+    {
+        GameObject nearest = null;
+        float nearestDistance = pickupRadius;
+
+        nearest = CheckBoulderTag("BoulderLight", nearest, ref nearestDistance);
+        nearest = CheckBoulderTag("BoulderMedium", nearest, ref nearestDistance);
+        nearest = CheckBoulderTag("BoulderHeavy", nearest, ref nearestDistance);
+
+        return nearest;
+    }
+
+    GameObject CheckBoulderTag(string tag, GameObject currentNearest, ref float nearestDistance)
+    {
+        GameObject[] boulders = GameObject.FindGameObjectsWithTag(tag);
+
+        foreach (GameObject boulder in boulders)
+        {
+            // Direction vector from anchor to boulder — tutorial pattern
+            Vector3 direction = boulder.transform.position - tetherAnchor.position;
+            float distance = direction.magnitude;
+
+            if (distance < nearestDistance)
+            {
+                nearestDistance = distance;
+                currentNearest = boulder;
+            }
+        }
+
+        return currentNearest;
     }
 
     void AttachBoulder(GameObject boulder)
     {
-        attachedBoulder = boulder; //store the reference to the attached boulder
+        attachedBoulder = boulder;
 
-        //Adding a fixedJoint to the anchor point at the bottom of the tether
-        fixedJoint = tetherAnchor.gameObject.AddComponent<FixedJoint> ();
+        // KEY FIX: add joint TO THE BOULDER, connect to ROCKET's Rigidbody
+        // This keeps the anchor safely parented under the rocket — nothing detaches
+        fixedJoint = boulder.AddComponent<FixedJoint>();
+        fixedJoint.connectedBody = GetComponent<Rigidbody>();
 
-        //Connecting it to the boulder's rigibody
-        fixedJoint.connectedBody = boulder.GetComponent<Rigidbody>();
-
-        //Telling the gameController which boulder type for fuel drain rate
         gameController.SetCurrentBoulder(boulder.tag);
+        lineRenderer.enabled = true;
 
         Debug.Log("Picked up: " + boulder.tag);
     }
 
     public void DetachBoulder()
     {
+        // Zero out boulder velocity before detaching
+        // Stops it flying off with rocket's momentum
+        if (attachedBoulder != null)
+        {
+            Rigidbody boulderRb = attachedBoulder.GetComponent<Rigidbody>();
+            if (boulderRb != null)
+            {
+                boulderRb.velocity = Vector3.zero;
+                boulderRb.angularVelocity = Vector3.zero;
+            }
+        }
+
         if (fixedJoint != null)
         {
-            Destroy(fixedJoint); //remove the joint to detach
+            Destroy(fixedJoint);
             fixedJoint = null;
         }
 
-        attachedBoulder = null; //clear the reference to the boulder
-
-        //Telling the game controller boulder was delivered 
-
+        attachedBoulder = null;
+        lineRenderer.enabled = false;
         gameController.BoulderDelivered();
+
+        Debug.Log("Boulder released!");
+    }
+
+    void UpdateRopeVisual()
+    {
+        if (attachedBoulder == null) return;
+
+        // Draw line from anchor (bottom of tether) to boulder
+        lineRenderer.SetPosition(0, tetherAnchor.position);
+        lineRenderer.SetPosition(1, attachedBoulder.transform.position);
     }
 
     public void ResetTether()
@@ -98,6 +149,8 @@ public class TetherController : MonoBehaviour
         if (fixedJoint != null) Destroy(fixedJoint);
         fixedJoint = null;
         attachedBoulder = null;
+        lineRenderer.enabled = false;
+        promptText.text = "";
     }
 
     public bool HasBoulder()
