@@ -17,6 +17,9 @@ public class RedBallBehaviour : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        //setting the correct gravity for task 1 scene
+        Physics.gravity = new Vector3(0f, -9.81f, 0f);
+        
         //set the ball starting velocity to whatever is set in the inspector
         velocity = launchVel;
     }
