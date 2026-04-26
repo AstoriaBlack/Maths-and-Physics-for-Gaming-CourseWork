@@ -27,8 +27,8 @@ public class PinkBallBehaviourScript : MonoBehaviour
     {
         //Setting the standard gravity for the Task 2 scene
         Physics.gravity = new Vector3(0f, -9.81f, 0f);
-        
-        //Building the arra of waypoints from the inspector variables
+
+        //Building the array of waypoints from the inspector variables
         waypoints = new Transform[] {waypoint1, waypoint2, waypoint3, waypoint4};
 
         //starts with the full speed

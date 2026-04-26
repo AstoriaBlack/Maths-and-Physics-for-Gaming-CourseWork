@@ -36,6 +36,8 @@ public class RocketController : MonoBehaviour
 
     void HandleInput()
     {
+        //this will returns true every frame the key is held down 
+        //GetKey is used instead of GetKeyDown because the rocket needs to keep applying thrust as long as the key held down
         if (Input.GetKey("up"))
         {
             ApplyThrust(Vector3.up);
@@ -52,12 +54,18 @@ public class RocketController : MonoBehaviour
         }
     }
 
+//this method will apply force to the rocket in the given direction
+//also will drain fuel 
     void ApplyThrust(Vector3 direction)
     {
-        rb.AddForce(direction * thrustForce, ForceMode.Force);
+        //this will push the rigibody in the given direction
+        rb.AddForce(direction * thrustForce, ForceMode.Force); //ForceMode.Force means the force is applied continuously over time, that consider the mass as well
         gameController.DrainFuel(fuelDrainThrust * Time.deltaTime);
+        //Time.deltaTime would ensure the fuel is draned per second, not per frame
+        
     }
 
+    //gameController will call this method to reset the rocket position and velocity when the game ended or restarted
     public void ResetRocket(Vector3 startPosition)
     {
         transform.position = startPosition;
