@@ -73,7 +73,7 @@ public class TetherController : MonoBehaviour
         fixedJoint.connectedBody = boulder.GetComponent<Rigidbody>();
 
         //Telling the gameController which boulder type for fuel drain rate
-        gameController.setCurrentBoulder(boulder.tag);
+        gameController.SetCurrentBoulder(boulder.tag);
 
         Debug.Log("Picked up: " + boulder.tag);
     }
