@@ -13,26 +13,21 @@ public class TetherController : MonoBehaviour
     // --- Private State ---
     GameObject attachedBoulder;
     FixedJoint fixedJoint;
-    LineRenderer lineRenderer;
     GameObject nearestBoulder;
     GameController gameController;
 
-    // Start is called before the first frame update
     void Start()
     {
         gameController = FindObjectOfType<GameController>();
-        lineRenderer = GetComponent<LineRenderer>();
-        lineRenderer.enabled = false;
     }
 
-    // Update is called once per frame
     void Update()
     {
         promptText.text = "";
 
         nearestBoulder = FindNearestBoulder();
 
-        // Case 1: no boulder — look for one to pick up
+        // Case 1: no boulder attached — look for one to pick up
         if (attachedBoulder == null)
         {
             if (nearestBoulder != null)
@@ -57,8 +52,6 @@ public class TetherController : MonoBehaviour
                 return;
             }
         }
-
-        UpdateRopeVisual();
     }
 
     GameObject FindNearestBoulder()
@@ -66,9 +59,9 @@ public class TetherController : MonoBehaviour
         GameObject nearest = null;
         float nearestDistance = pickupRadius;
 
-        nearest = CheckBoulderTag("BoulderLight", nearest, ref nearestDistance);
+        nearest = CheckBoulderTag("BoulderLight",  nearest, ref nearestDistance);
         nearest = CheckBoulderTag("BoulderMedium", nearest, ref nearestDistance);
-        nearest = CheckBoulderTag("BoulderHeavy", nearest, ref nearestDistance);
+        nearest = CheckBoulderTag("BoulderHeavy",  nearest, ref nearestDistance);
 
         return nearest;
     }
@@ -79,7 +72,7 @@ public class TetherController : MonoBehaviour
 
         foreach (GameObject boulder in boulders)
         {
-            // Direction vector from anchor to boulder — tutorial pattern
+            // Direction vector from anchor to boulder — uses Vector3 magnitude (module pattern)
             Vector3 direction = boulder.transform.position - tetherAnchor.position;
             float distance = direction.magnitude;
 
@@ -97,27 +90,26 @@ public class TetherController : MonoBehaviour
     {
         attachedBoulder = boulder;
 
-        // KEY FIX: add joint TO THE BOULDER, connect to ROCKET's Rigidbody
-        // This keeps the anchor safely parented under the rocket — nothing detaches
+        // Add FixedJoint TO the boulder, connected back to the rocket's Rigidbody.
+        // This keeps the tether anchor safely parented under the rocket.
         fixedJoint = boulder.AddComponent<FixedJoint>();
         fixedJoint.connectedBody = GetComponent<Rigidbody>();
 
         gameController.SetCurrentBoulder(boulder.tag);
-        lineRenderer.enabled = true;
 
         Debug.Log("Picked up: " + boulder.tag);
     }
 
     public void DetachBoulder()
     {
-        // Zero out boulder velocity before detaching
-        // Stops it flying off with rocket's momentum
+        // Zero out boulder velocity before detaching so it doesn't
+        // fly off carrying the rocket's momentum
         if (attachedBoulder != null)
         {
             Rigidbody boulderRb = attachedBoulder.GetComponent<Rigidbody>();
             if (boulderRb != null)
             {
-                boulderRb.velocity = Vector3.zero;
+                boulderRb.velocity        = Vector3.zero;
                 boulderRb.angularVelocity = Vector3.zero;
             }
         }
@@ -129,27 +121,16 @@ public class TetherController : MonoBehaviour
         }
 
         attachedBoulder = null;
-        lineRenderer.enabled = false;
         gameController.BoulderDelivered();
 
         Debug.Log("Boulder released!");
     }
 
-    void UpdateRopeVisual()
-    {
-        if (attachedBoulder == null) return;
-
-        // Draw line from anchor (bottom of tether) to boulder
-        lineRenderer.SetPosition(0, tetherAnchor.position);
-        lineRenderer.SetPosition(1, attachedBoulder.transform.position);
-    }
-
     public void ResetTether()
     {
         if (fixedJoint != null) Destroy(fixedJoint);
-        fixedJoint = null;
+        fixedJoint    = null;
         attachedBoulder = null;
-        lineRenderer.enabled = false;
         promptText.text = "";
     }
 

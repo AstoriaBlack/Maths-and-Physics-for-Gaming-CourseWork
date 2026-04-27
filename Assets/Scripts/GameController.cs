@@ -65,7 +65,7 @@ public class GameController : MonoBehaviour
         UpdateFuelUI();
 
         //Checking if fuel has run out
-        if(fuel <+ 0f)
+        if(fuel <= 0f)
         {
             ResetGame();
         }

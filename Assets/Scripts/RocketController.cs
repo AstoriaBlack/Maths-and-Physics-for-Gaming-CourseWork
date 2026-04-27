@@ -6,7 +6,7 @@ public class RocketController : MonoBehaviour
 {
     //Setting up variables for inspector to change
     //To control the thrust force of the rocket
-    [SerializeField] float thrustForce = 5f;
+    [SerializeField] float thrustForce = 10f;
     //to calculate the fuel unit drains per second while thrusting
     [SerializeField] float fuelDrainThrust = 1f;
 
