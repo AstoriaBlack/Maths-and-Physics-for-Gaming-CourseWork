@@ -1,33 +1,34 @@
 using System.Collections;
 using System.Collections.Generic;
-using TMPro;
 using UnityEngine;
+using TMPro;
 using UnityEngine.UI;
 
 public class GameController : MonoBehaviour
 {
-    //The variables for the inspeactor to change
+    // --- Inspector Settings ---
     [SerializeField] Slider fuelSlider;
-
     [SerializeField] TMP_Text fuelText;
+    [SerializeField] TMP_Text statusText;
 
-    //Fuel drain rates
-    float drainRateLight = 1f;
+    // --- Fuel drain rates per boulder type (from brief) ---
+    float drainRateLight  = 1f;
     float drainRateMedium = 5f;
-    float drainRateHeavy = 8f;
+    float drainRateHeavy  = 8f;
 
-    //private state variables
+    // --- Private State ---
     float fuel = 100f;
     float currentBoulderDrain = 0f;
     int bouldersDelivered = 0;
     int totalBoulders = 3;
+    bool gameWon = false;
 
-    //References for resetting
+    // References for resetting
     RocketController rocketController;
     TetherController tetherController;
     Vector3 rocketStartPosition;
 
-    //Boulder rest data
+    // Boulder reset data
     GameObject[] lightBoulders;
     GameObject[] mediumBoulders;
     GameObject[] heavyBoulders;
@@ -35,28 +36,25 @@ public class GameController : MonoBehaviour
     Vector3[] mediumStartPositions;
     Vector3[] heavyStartPositions;
 
-    // Start is called before the first frame update
     void Start()
     {
         rocketController = FindObjectOfType<RocketController>();
         tetherController = FindObjectOfType<TetherController>();
 
-        //Rememberint to where the rocket starts for resetting later
         rocketStartPosition = rocketController.transform.position;
 
-        //Storing all boulder start positions
         StoreBoulderPositions();
-        
-        //setting up the UI
-        fuelSlider.maxValue = 100f;
-        fuelSlider.value = fuel;
 
+        fuelSlider.maxValue = 100f;
+
+        // Force full UI refresh at start
+        RefreshAllUI();
     }
 
-    // Update is called once per frame
     void Update()
     {
-        //Vpntinuously drain fuel if carrying a boulder
+        if (gameWon) return;
+
         if (currentBoulderDrain > 0f)
         {
             DrainFuel(currentBoulderDrain * Time.deltaTime);
@@ -64,8 +62,7 @@ public class GameController : MonoBehaviour
 
         UpdateFuelUI();
 
-        //Checking if fuel has run out
-        if(fuel <= 0f)
+        if (fuel <= 0f)
         {
             ResetGame();
         }
@@ -73,101 +70,129 @@ public class GameController : MonoBehaviour
 
     void StoreBoulderPositions()
     {
-        lightBoulders = GameObject.FindGameObjectsWithTag("BoulderLight");
+        lightBoulders  = GameObject.FindGameObjectsWithTag("BoulderLight");
         mediumBoulders = GameObject.FindGameObjectsWithTag("BoulderMedium");
-        heavyBoulders = GameObject.FindGameObjectsWithTag("BoulderHeavy");
+        heavyBoulders  = GameObject.FindGameObjectsWithTag("BoulderHeavy");
 
-        lightStartPositions = GetPositions(lightBoulders);
+        lightStartPositions  = GetPositions(lightBoulders);
         mediumStartPositions = GetPositions(mediumBoulders);
-        heavyStartPositions = GetPositions(heavyBoulders);
+        heavyStartPositions  = GetPositions(heavyBoulders);
     }
 
     Vector3[] GetPositions(GameObject[] objects)
     {
-        //Creating an array the same length as those objects
         Vector3[] positions = new Vector3[objects.Length];
-
-        //looping through and storing each position
-        for (int i=0; i < objects.Length; i++)
+        for (int i = 0; i < objects.Length; i++)
         {
             positions[i] = objects[i].transform.position;
         }
-
         return positions;
+    }
+
+    // Refreshes every UI element at once
+    // Call this on Start and after every reset
+    void RefreshAllUI()
+    {
+        fuel = Mathf.Max(fuel, 0f);
+        fuelSlider.value = fuel;
+
+        if (fuelText != null)
+            fuelText.text = "Fuel: " + Mathf.RoundToInt(fuel);
+
+        if (statusText != null)
+        {
+            int remaining = totalBoulders - bouldersDelivered;
+            statusText.text = "Boulders remaining: " + remaining + " / " + totalBoulders;
+        }
     }
 
     void UpdateFuelUI()
     {
         fuelSlider.value = fuel;
-        fuelText.text = "Fuel:" + Mathf.RoundToInt(fuel);
+
+        if (fuelText != null)
+            fuelText.text = "Fuel: " + Mathf.RoundToInt(fuel);
     }
 
-    //called by RocketController and ObstacleController to drain fuel
     public void DrainFuel(float amount)
     {
         fuel -= amount;
-
-        //Mathf.Max stops fuel from going below 0
         fuel = Mathf.Max(fuel, 0f);
-
     }
 
-    //This method is called by TetherController when boulder is picked up to set the current fuel drain rate
     public void SetCurrentBoulder(string boulderTag)
     {
-        if(boulderTag == "BoulderLight")
-        {
+        if (boulderTag == "BoulderLight")
             currentBoulderDrain = drainRateLight;
-        }
         else if (boulderTag == "BoulderMedium")
-        {
             currentBoulderDrain = drainRateMedium;
-        }
         else if (boulderTag == "BoulderHeavy")
-        {
             currentBoulderDrain = drainRateHeavy;
-        }
+        else
+            currentBoulderDrain = 0f;
     }
 
-    //This method is called by TetherController when boulder reached drop zone
     public void BoulderDelivered()
     {
         bouldersDelivered++;
         currentBoulderDrain = 0f;
 
-        Debug.Log("Delivered: " + bouldersDelivered + "/" + totalBoulders);
 
-        if (bouldersDelivered>= totalBoulders)
+    Debug.Log("Delivered: " + bouldersDelivered + "/" + totalBoulders);
+        
+
+        // Refresh UI immediately after delivery
+        RefreshAllUI();
+
+        if (bouldersDelivered >= totalBoulders)
         {
             WinGame();
+            return;
         }
     }
 
     void WinGame()
     {
+        gameWon = true;
+
         Debug.Log("YOU WIN! YAYY!");
-        Time.timeScale = 0f; //this will freeze the game  
+
+        if (statusText != null)
+            statusText.text = "YOU WIN! All boulders delivered! Resetting in 3 seconds...";
+
+        // Auto reset after 3 seconds
+        CancelInvoke();
+        Invoke("ResetGame", 3f);
     }
 
     void ResetGame()
     {
-        Debug.Log("Out of Fuel! Game Resetting...");
+        Debug.Log("Resetting game...");
 
-        //Resetting Counters
+        // Cancel any pending Invoke calls (e.g. WinGame's 3 second timer)
+        CancelInvoke();
+
+        // Reset all state
+        gameWon = false;
         fuel = 100f;
         bouldersDelivered = 0;
         currentBoulderDrain = 0f;
 
-        //resetting rocket
+        // Reset rocket
         rocketController.ResetRocket(rocketStartPosition);
 
-        //Resetting tether
+        // Reset tether
         tetherController.ResetTether();
 
-        //Resseting all the boulders
-        ResetBoulders(lightBoulders, lightStartPositions);
+        FindObjectOfType<DropZoneController>().ResetDropZone();
+
+        // Reset all boulders
+        ResetBoulders(lightBoulders,  lightStartPositions);
         ResetBoulders(mediumBoulders, mediumStartPositions);
-        ResetBoulders(heavyBoulders, heavyStartPositions);
+        ResetBoulders(heavyBoulders,  heavyStartPositions);
+
+        // Force full UI refresh after reset
+        RefreshAllUI();
     }
 
     void ResetBoulders(GameObject[] boulders, Vector3[] positions)
@@ -179,6 +204,9 @@ public class GameController : MonoBehaviour
             Rigidbody rb = boulders[i].GetComponent<Rigidbody>();
             if (rb != null)
             {
+                // Unfreeze first — delivered boulders get frozen, must undo on reset
+                rb.constraints = RigidbodyConstraints.None;
+
                 rb.velocity = Vector3.zero;
                 rb.angularVelocity = Vector3.zero;
             }

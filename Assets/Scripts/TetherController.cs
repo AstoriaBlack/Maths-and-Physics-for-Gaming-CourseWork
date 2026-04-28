@@ -23,11 +23,12 @@ public class TetherController : MonoBehaviour
 
     void Update()
     {
-        promptText.text = "";
+        // Clear prompt each frame
+        if (promptText != null) promptText.text = "";
 
         nearestBoulder = FindNearestBoulder();
 
-        // Case 1: no boulder attached — look for one to pick up
+        // Case 1: no boulder — look for one to pick up
         if (attachedBoulder == null)
         {
             if (nearestBoulder != null)
@@ -41,16 +42,10 @@ public class TetherController : MonoBehaviour
                 }
             }
         }
-        // Case 2: carrying a boulder — offer to drop
+        // Case 2: carrying boulder — show info only
         else
         {
-            promptText.text = "Press E to drop boulder";
-
-            if (Input.GetKeyDown(KeyCode.E))
-            {
-                DetachBoulder();
-                return;
-            }
+            promptText.text = "Fly to the drop zone!";
         }
     }
 
@@ -72,7 +67,7 @@ public class TetherController : MonoBehaviour
 
         foreach (GameObject boulder in boulders)
         {
-            // Direction vector from anchor to boulder — uses Vector3 magnitude (module pattern)
+            // Direction vector from anchor to boulder — tutorial Vector3 pattern
             Vector3 direction = boulder.transform.position - tetherAnchor.position;
             float distance = direction.magnitude;
 
@@ -90,8 +85,7 @@ public class TetherController : MonoBehaviour
     {
         attachedBoulder = boulder;
 
-        // Add FixedJoint TO the boulder, connected back to the rocket's Rigidbody.
-        // This keeps the tether anchor safely parented under the rocket.
+        // Joint on boulder connected to rocket Rigidbody — anchor stays put
         fixedJoint = boulder.AddComponent<FixedJoint>();
         fixedJoint.connectedBody = GetComponent<Rigidbody>();
 
@@ -100,18 +94,20 @@ public class TetherController : MonoBehaviour
         Debug.Log("Picked up: " + boulder.tag);
     }
 
-    public void DetachBoulder()
+    // Called automatically by DropZoneController — no E press needed
+    public void DeliverBoulder()
     {
-        // Zero out boulder velocity before detaching so it doesn't
-        // fly off carrying the rocket's momentum
-        if (attachedBoulder != null)
+        if (attachedBoulder == null) return;
+
+        // Zero velocity so boulder stays in drop zone
+        Rigidbody boulderRb = attachedBoulder.GetComponent<Rigidbody>();
+        if (boulderRb != null)
         {
-            Rigidbody boulderRb = attachedBoulder.GetComponent<Rigidbody>();
-            if (boulderRb != null)
-            {
-                boulderRb.velocity        = Vector3.zero;
-                boulderRb.angularVelocity = Vector3.zero;
-            }
+            boulderRb.velocity = Vector3.zero;
+            boulderRb.angularVelocity = Vector3.zero;
+
+            // Freeze so it stays put in drop zone
+            boulderRb.constraints = RigidbodyConstraints.FreezeAll;
         }
 
         if (fixedJoint != null)
@@ -121,17 +117,27 @@ public class TetherController : MonoBehaviour
         }
 
         attachedBoulder = null;
-        gameController.BoulderDelivered();
 
-        Debug.Log("Boulder released!");
+        if (promptText != null) promptText.text = "";
+
+
+        Debug.Log("Boulder delivered to drop zone!");
+
+        // Tell GameController — counts toward win
+        gameController.BoulderDelivered();
     }
 
     public void ResetTether()
     {
-        if (fixedJoint != null) Destroy(fixedJoint);
-        fixedJoint    = null;
+        if (fixedJoint != null)
+        {
+            Destroy(fixedJoint);
+            fixedJoint = null;
+        }
+
         attachedBoulder = null;
-        promptText.text = "";
+
+        if (promptText != null) promptText.text = "";
     }
 
     public bool HasBoulder()

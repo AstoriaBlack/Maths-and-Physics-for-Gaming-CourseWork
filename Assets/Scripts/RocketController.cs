@@ -68,6 +68,11 @@ public class RocketController : MonoBehaviour
         gameController.DrainFuel(fuelDrainThrust * Time.deltaTime);
         //Time.deltaTime would ensure the fuel is draned per second, not per frame
         
+
+        if (fuelDrainThrust > 0f)
+        {
+            gameController.DrainFuel(fuelDrainThrust * Time.deltaTime);
+        }
     }
 
     //gameController will call this method to reset the rocket position and velocity when the game ended or restarted

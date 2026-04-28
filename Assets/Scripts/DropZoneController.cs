@@ -4,27 +4,38 @@ using UnityEngine;
 
 public class DropZoneController : MonoBehaviour
 {
-    //private state variables
     TetherController tetherController;
-    // Start is called before the first frame update
+
+    // Track which boulders already delivered so trigger doesn't fire twice
+    List<GameObject> deliveredBoulders = new List<GameObject>();
+
     void Start()
     {
         tetherController = FindObjectOfType<TetherController>();
     }
 
-    //OnTriggerEnter is called when something enters a trigger collider
     void OnTriggerEnter(Collider other)
     {
-        //Chckeing if the boulder entered the drop zone
         bool isBoulder = other.CompareTag("BoulderLight") ||
-                        other.CompareTag("BoulderMedium") ||
-                        other.CompareTag("BoulderHeavy");
+                         other.CompareTag("BoulderMedium") ||
+                         other.CompareTag("BoulderHeavy");
 
-        //only counting the delivery if rocket actually has it on tether
-        if (isBoulder && tetherController.HasBoulder())
+        if (!isBoulder) return;
+
+        // Ignore if this boulder was already delivered
+        if (deliveredBoulders.Contains(other.gameObject)) return;
+
+        // Only deliver if rocket is carrying this boulder
+        if (tetherController.HasBoulder())
         {
-            tetherController.DetachBoulder();
-            Debug.Log("The boulder deleivered!");
+            deliveredBoulders.Add(other.gameObject);
+            tetherController.DeliverBoulder();
         }
+    }
+
+    // Called by GameController on reset — clear the delivered list
+    public void ResetDropZone()
+    {
+        deliveredBoulders.Clear();
     }
 }
