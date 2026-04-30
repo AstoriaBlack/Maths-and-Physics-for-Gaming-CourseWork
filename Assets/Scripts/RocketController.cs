@@ -65,13 +65,13 @@ public class RocketController : MonoBehaviour
     {
         //this will push the rigibody in the given direction
         rb.AddForce(direction * thrustForce, ForceMode.Force); //ForceMode.Force means the force is applied continuously over time, that consider the mass as well
-        gameController.DrainFuel(fuelDrainThrust * Time.deltaTime);
-        //Time.deltaTime would ensure the fuel is draned per second, not per frame
+        
         
 
         if (fuelDrainThrust > 0f)
         {
             gameController.DrainFuel(fuelDrainThrust * Time.deltaTime);
+            //Time.deltaTime would ensure the fuel is draned per second, not per frame
         }
     }
 
