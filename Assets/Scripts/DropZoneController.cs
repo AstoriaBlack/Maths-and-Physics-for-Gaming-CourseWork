@@ -39,6 +39,7 @@ public class DropZoneController : MonoBehaviour
             //appends the delivered boulder to the list
             deliveredBoulders.Add(other.gameObject);
             //calling the DeliverBoulder method in tetherController 
+            tetherController.DeliverBoulder();
         }
     }
 
