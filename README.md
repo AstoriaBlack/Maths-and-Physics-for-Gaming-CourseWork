@@ -1,10 +1,10 @@
 # 5CCGD010W – Maths and Physics for Games: Coursework
 
-![Alt Text]D:\unity projects\5CCGD010W_CW_Maths_and_Phy\Assets\images\Task-1
+![Alt Text]D:\unity projects\5CCGD010W_CW_Maths_and_Phy\Assets\images\Task-1.png
 
-![Alt Text]D:\unity projects\5CCGD010W_CW_Maths_and_Phy\Assets\images\Task-2
+![Alt Text]D:\unity projects\5CCGD010W_CW_Maths_and_Phy\Assets\images\Task-2.png
 
-![Alt Text]D:\unity projects\5CCGD010W_CW_Maths_and_Phy\Assets\images\Task-3
+![Alt Text]D:\unity projects\5CCGD010W_CW_Maths_and_Phy\Assets\images\Task-3.png
 
 
 A Unity project built for the module **Maths and Physics for Gaming (5CCGD010W)**, demonstrating projectile motion, waypoint-based movement with easing, and a multi-system space game combining physics, tethering, and resource management.
